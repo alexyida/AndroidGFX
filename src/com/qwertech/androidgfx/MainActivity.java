@@ -29,7 +29,7 @@ public class MainActivity extends Activity {
         	mGLSurfaceView.setEGLContextClientVersion(2);
         	
         	// Set the renderer to our demo renderer, defined below.
-        	mGLSurfaceView.setRenderer(new CubeRenderer());
+        	mGLSurfaceView.setRenderer(new CubeRenderer(this));
         } else {
         	// This is where you could create an OpenGL ES 1.x compatible
             // renderer if you wanted to support both ES 1 and ES 2.
