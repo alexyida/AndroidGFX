@@ -91,8 +91,13 @@ public class CubeRenderer implements GLSurfaceView.Renderer {
     /** This is a handle to our per-vertex cube shading program. */
     private int mPerVertexProgramHandle;
     
+    /** This is a handle to our per-fragment cube shading program. */
+    private int mPerFragmentProgramHandle;
+    
     /** This is a handle to our light point program. */
     private int mPointProgramHandle;
+    
+    private boolean mPerFragment = false;
     
     /**
      * Initialize the model data.
@@ -314,6 +319,17 @@ public class CubeRenderer implements GLSurfaceView.Renderer {
         final int fragmentShaderHandle = compileShader(GLES20.GL_FRAGMENT_SHADER, fragmentShader);
 
         mPerVertexProgramHandle = createAndLinkProgram(vertexShaderHandle, fragmentShaderHandle, new String[] {"a_Position", "a_Color", "a_Normal"});
+    
+        final String perFragmentVertexShader = RawResourceReader.readTextFileFromRawResource(this.mainActivity, R.raw.per_fragment_vertex_shader);;
+        
+        final String perFragmentFragmentShader = RawResourceReader.readTextFileFromRawResource(this.mainActivity, R.raw.per_fragment_fragment_shader);
+        
+        // Load in the vertex shader.
+        final int perFragmentVertexShaderHandle = compileShader(GLES20.GL_VERTEX_SHADER, perFragmentVertexShader);       
+        // Load in the fragment shader shader.
+        final int perFragmentFragmentShaderHandle = compileShader(GLES20.GL_FRAGMENT_SHADER, perFragmentFragmentShader);
+        
+        mPerFragmentProgramHandle = createAndLinkProgram(perFragmentVertexShaderHandle, perFragmentFragmentShaderHandle, new String[] {"a_Position", "a_Color", "a_Normal"});
         
         // Define a simple shader program for our point.
         final String pointVertexShader = RawResourceReader.readTextFileFromRawResource(this.mainActivity, R.raw.point_vertex_shader);
@@ -352,16 +368,23 @@ public class CubeRenderer implements GLSurfaceView.Renderer {
     	float angleInDegrees = (360.0f / 10000.0f) * ((int) time);
     	
     	// Tell OpenGL to use this program when rendering.
-    	// Set our per-vertex lighting program.
-        GLES20.glUseProgram(mPerVertexProgramHandle);
+    	// Set our lighting program.
+    	
+    	int programHandle;
+    	if (mPerFragment)
+    		programHandle = mPerFragmentProgramHandle;
+    	else
+    		programHandle = mPerVertexProgramHandle;
+    		
+    	GLES20.glUseProgram(programHandle);
     	
         // Set our per-vertex lighting program. These will later be used to pass in values to the program.
-        mMVPMatrixHandle = GLES20.glGetUniformLocation(mPerVertexProgramHandle, "u_MVPMatrix");
-        mMVMatrixHandle = GLES20.glGetUniformLocation(mPerVertexProgramHandle, "u_MVMatrix");
-        mLightPosHandle = GLES20.glGetUniformLocation(mPerVertexProgramHandle, "u_LightPos");
-        mPositionHandle = GLES20.glGetAttribLocation(mPerVertexProgramHandle, "a_Position");
-        mColorHandle = GLES20.glGetAttribLocation(mPerVertexProgramHandle, "a_Color");
-        mNormalHandle = GLES20.glGetAttribLocation(mPerVertexProgramHandle, "a_Normal");
+        mMVPMatrixHandle = GLES20.glGetUniformLocation(programHandle, "u_MVPMatrix");
+        mMVMatrixHandle = GLES20.glGetUniformLocation(programHandle, "u_MVMatrix");
+        mLightPosHandle = GLES20.glGetUniformLocation(programHandle, "u_LightPos");
+        mPositionHandle = GLES20.glGetAttribLocation(programHandle, "a_Position");
+        mColorHandle = GLES20.glGetAttribLocation(programHandle, "a_Color");
+        mNormalHandle = GLES20.glGetAttribLocation(programHandle, "a_Normal");
     	
     	// Calculate position of the light. Rotate and then push into the distance.
         Matrix.setIdentityM(mLightModelMatrix, 0);
@@ -546,5 +569,9 @@ public class CubeRenderer implements GLSurfaceView.Renderer {
         	throw new RuntimeException("Error creating program.");
         
         return programHandle;
+    }
+    
+    public void switchMode() {
+    	mPerFragment = !mPerFragment;
     }
 }
